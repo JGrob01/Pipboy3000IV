@@ -9,7 +9,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtMultimediaWidgets import QVideoWidget
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -18,9 +18,10 @@ class Ui_MainWindow(object):
         MainWindow.setMaximumSize(QtCore.QSize(720, 720))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.widget = QVideoWidget(self.centralwidget)
+        self.widget = QtWidgets.QLabel(self.centralwidget)
         self.widget.setGeometry(QtCore.QRect(0, 0, 720, 720))
-        self.widget.setMinimumSize(QtCore.QSize(720, 720))
+        self.widget.setText("")
+        self.widget.setScaledContents(True)
         self.widget.setObjectName("widget")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)

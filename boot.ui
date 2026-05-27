@@ -20,7 +20,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QVideoWidget" name="widget" native="true">
+   <widget class="QLabel" name="widget">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -29,11 +29,11 @@
       <height>720</height>
      </rect>
     </property>
-    <property name="minimumSize">
-     <size>
-      <width>720</width>
-      <height>720</height>
-     </size>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>
@@ -49,14 +49,6 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QVideoWidget</class>
-   <extends>QWidget</extends>
-   <header>QVideoWidget</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
