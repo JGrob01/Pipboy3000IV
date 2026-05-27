@@ -56,7 +56,7 @@ class MainWindow(QMainWindow):
         self.start_boot()
 
     def start_boot(self):        
-        self.boot_sound.play()
+        #self.boot_sound.play()
         self.boot_animation.play()
 
     def on_boot_done(self):
