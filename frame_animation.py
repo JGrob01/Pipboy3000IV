@@ -6,11 +6,6 @@ from PyQt5.QtGui import QPixmap
 
 
 class FrameAnimation(QObject):
-    """Plays a sequence of PNG frames on a QLabel via QTimer.
-
-    Emits `finished` when a non-looping animation reaches the last frame.
-    """
-
     finished = pyqtSignal()
 
     def __init__(self, label, frames_dir, fps=15, loop=False, parent=None):
@@ -20,10 +15,9 @@ class FrameAnimation(QObject):
         self.loop = loop
 
         pattern = os.path.join(frames_dir, "*.png")
-        frame_paths = sorted(glob.glob(pattern))
-        if not frame_paths:
+        self.frame_paths = sorted(glob.glob(pattern))
+        if not self.frame_paths:
             raise FileNotFoundError(f"No PNG frames found in {frames_dir}")
-        self.pixmaps = [QPixmap(p) for p in frame_paths]
 
         self.index = 0
         self.timer = QTimer(self)
@@ -31,7 +25,7 @@ class FrameAnimation(QObject):
 
     def play(self):
         self.index = 0
-        self.label.setPixmap(self.pixmaps[0])
+        self.label.setPixmap(QPixmap(self.frame_paths[0]))
         self.timer.start(self.interval_ms)
 
     def stop(self):
@@ -39,11 +33,11 @@ class FrameAnimation(QObject):
 
     def _next_frame(self):
         self.index += 1
-        if self.index >= len(self.pixmaps):
+        if self.index >= len(self.frame_paths):
             if self.loop:
                 self.index = 0
             else:
                 self.timer.stop()
                 self.finished.emit()
                 return
-        self.label.setPixmap(self.pixmaps[self.index])
+        self.label.setPixmap(QPixmap(self.frame_paths[self.index]))
