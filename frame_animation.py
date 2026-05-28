@@ -14,7 +14,7 @@ class FrameAnimation(QObject):
         self.interval_ms = int(1000 / fps)
         self.loop = loop
 
-        pattern = os.path.join(frames_dir, "*.png")
+        pattern = os.path.join(frames_dir, "*.jpg")
         self.frame_paths = sorted(glob.glob(pattern))
         if not self.frame_paths:
             raise FileNotFoundError(f"No PNG frames found in {frames_dir}")
