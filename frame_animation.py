@@ -1,5 +1,6 @@
 import os
 import glob
+import time
 
 from PyQt5.QtCore import QObject, QTimer, QThread, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QPixmap
@@ -51,6 +52,8 @@ class FrameAnimation(QObject):
         self.interval_ms = int(1000 / fps)
         self.loop = loop
         self.buffer_ahead = buffer_ahead
+
+        self._last_time = None
 
         # accept both .jpg and .png
         paths = sorted(
@@ -109,6 +112,16 @@ class FrameAnimation(QObject):
         self.loader.stop()
 
     def _next_frame(self):
+        # In __init__:
+        self._last_time = None
+
+        # At the very top of _next_frame:
+        now = time.monotonic()
+        if self._last_time is not None:
+            delta = (now - self._last_time) * 1000
+            print(f"Frame {self.index}: {delta:.0f}ms (target {self.interval_ms}ms)")
+        self._last_time = now
+        
         self.index += 1
 
         # Handle repeat section
