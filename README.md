@@ -14,9 +14,8 @@ ssh pipboy3000iv@pipboy3000iv.local
 cd Pipboy3000IV
 python3 -m venv .venv --system-site-packages
 source .venv/bin/activate
-QT_QPA_PLATFORM=eglfs python app.py
-
 git pull
+QT_QPA_PLATFORM=eglfs python app.py
 
 -------------------------------------------------------------------------------------------------------------------------------------
 
