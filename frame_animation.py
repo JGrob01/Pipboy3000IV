@@ -131,8 +131,8 @@ class FrameAnimation(QObject):
         # Display current frame if cached; otherwise hold previous
         if self.index in self.cache:
             self.label.setPixmap(self.cache[self.index])
-        else:
-            print(f"STALL: frame {self.index} not ready, cache has {len(self.cache)} frames")
 
-        self._prefetch()
-        self._drop_old()
+        # Only prefetch/drop every 5 frames instead of every frame
+        if self.index % 5 == 0:
+            self._prefetch()
+            self._drop_old()

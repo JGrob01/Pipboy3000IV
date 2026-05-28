@@ -32,6 +32,7 @@ class MainWindow(QMainWindow):
             self.setWindowFlags(Qt.FramelessWindowHint)
             self.setCursor(QCursor(Qt.BlankCursor))
             self.showFullScreen()
+            self.ui.image.setScaledContents(False)
 
         # --- Exit shortcut ---
         QShortcut(QKeySequence("Esc"), self, self.close)
