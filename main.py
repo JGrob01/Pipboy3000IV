@@ -26,6 +26,7 @@ class ScrollScreen(Screen):
         self.font = font
         self.duration = duration_s
         self.elapsed = 0.0
+        self._started = False
 
         # Pre-render text as a single tall surface
         lines = text.split("\n")
@@ -34,14 +35,17 @@ class ScrollScreen(Screen):
         self.text_surf = pygame.Surface((SCREEN_SIZE[0], self.text_h), pygame.SRCALPHA)
         for i, line in enumerate(lines):
             rendered = self.font.render(line, True, GREEN)
-            self.text_surf.blit(rendered, (30, i * line_h))
+            self.text_surf.blit(rendered, (0, i * line_h))
 
         # Total travel: from below the screen to above it
         self.start_y = SCREEN_SIZE[1]
         self.end_y = -self.text_h
 
     def update(self, dt):
-        self.elapsed += dt
+        if not self._started:
+            self._started = True
+            return
+        self.elapsed += min(dt, 0.05)   # never advance more than 50ms per frame
         if self.elapsed >= self.duration:
             self.app.change_screen(self.app.frame_screen)
 
@@ -57,6 +61,7 @@ class FrameScreen(Screen):
         self.next_screen = next_screen
         self.frame_duration = 1.0 / fps
         self.elapsed = 0.0
+        self._started = False
 
         # Just store paths — don't load yet
         self.frame_paths = sorted(
@@ -73,7 +78,11 @@ class FrameScreen(Screen):
         self._cached_index = -1
 
     def update(self, dt):
-        self.elapsed += dt
+        if not self._started:
+            self._started = True
+            return
+        self.elapsed += min(dt, 0.05)   # never advance more than 50ms per frame
+
         while self.elapsed >= self.frame_duration:
             self.elapsed -= self.frame_duration
             self.index += 1
@@ -138,7 +147,7 @@ class App:
         
         base = os.path.dirname(os.path.abspath(__file__))
         font_path = os.path.join(base, "assets", "fonts", "Share-TechMono Regular.ttf")
-        self.font = pygame.font.Font(font_path if os.path.exists(font_path) else None, 17)
+        self.font = pygame.font.Font(font_path if os.path.exists(font_path) else None, 18)
         # In App.__init__, after mixer.init:
         boot_sound_path = os.path.join(base, "assets", "sounds", "boot.wav")
         self.boot_sound = pygame.mixer.Sound(boot_sound_path)
@@ -171,7 +180,8 @@ class App:
 
     def run(self):
         while self.running:
-            dt = self.clock.tick(FPS) / 1000.0
+            raw_dt = self.clock.tick(FPS) / 1000.0
+            dt = min(raw_dt, 0.05)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
