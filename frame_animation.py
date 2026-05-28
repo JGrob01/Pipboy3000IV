@@ -112,9 +112,6 @@ class FrameAnimation(QObject):
         self.loader.stop()
 
     def _next_frame(self):
-        # In __init__:
-        self._last_time = None
-
         # At the very top of _next_frame:
         now = time.monotonic()
         if self._last_time is not None:
