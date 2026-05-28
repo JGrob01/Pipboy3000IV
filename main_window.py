@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QMainWindow, QShortcut
 from PyQt5.QtCore import QUrl, Qt
 from PyQt5.QtGui import QCursor, QKeySequence
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 from boot import Ui_MainWindow
 from frame_animation import FrameAnimation
@@ -25,14 +26,27 @@ class MainWindow(QMainWindow):
         # --- Styling ---
         self.setStyleSheet("background-color: rgb(51, 51, 51);")
 
+        # In __init__, for the video phase:
+        self.video_widget = QVideoWidget(self.ui.viewport)
+        self.video_widget.setGeometry(0, 0, 720, 720)
+
+        self.boot_video = QMediaPlayer()
+        self.boot_video.setVideoOutput(self.video_widget)
+        video_path = os.path.join(self.assets_dir, "boot", "boot.mp4")
         # --- Window mode ---
         if os.environ.get("PIPBOY_DEV"):
             self.resize(720, 720)
+            self.boot_video.setMedia(QMediaContent(QUrl.fromLocalFile(video_path)))
         else:
             self.setWindowFlags(Qt.FramelessWindowHint)
             self.setCursor(QCursor(Qt.BlankCursor))
             self.showFullScreen()
             self.ui.image.setScaledContents(False)
+            # Pi: forced hardware decode via gstreamer
+            pipeline = ("gst-pipeline: filesrc location=" + video_path +
+                        " ! qtdemux ! h264parse ! v4l2h264dec ! videoconvert ! "
+                        "video/x-raw ! qtvideosink")
+            self.boot_video.setMedia(QMediaContent(QUrl(pipeline)))
 
         # --- Exit shortcut ---
         QShortcut(QKeySequence("Esc"), self, self.close)
@@ -71,8 +85,11 @@ class MainWindow(QMainWindow):
             parent=self,
         )
 
+        # Transition to main UI when video ends:
+        self.boot_video.mediaStatusChanged.connect(self._on_video_status)
+
         # Chain: text scroll done → frame animation plays
-        self.text_scroll.finished.connect(self.boot_animation.play)
+        self.text_scroll.finished.connect(self.boot_video.play)
         self.boot_animation.finished.connect(self.on_boot_done)
 
         # --- Kick off ---
@@ -84,3 +101,7 @@ class MainWindow(QMainWindow):
 
     def on_boot_done(self):
         print("Boot complete.")
+
+    def _on_video_status(self, status):
+        if status == QMediaPlayer.EndOfMedia:
+            self.on_boot_done()
