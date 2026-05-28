@@ -15,7 +15,7 @@ class TextScroll(QObject):
                  viewport_size=(720, 720),
                  font_size=20,
                  color="#15ff60",
-                 duration_ms=2500,
+                 duration_ms=4133.33,
                  parent=None):
         super().__init__(parent)
 
