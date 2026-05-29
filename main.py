@@ -2,6 +2,7 @@ import pygame
 import os
 import sys
 import glob
+import math
 
 if sys.platform.startswith("linux"):
     os.environ.setdefault("SDL_VIDEODRIVER", "kmsdrm")
@@ -107,30 +108,103 @@ class FrameScreen(Screen):
         surface.blit(self._current_frame, (0, 0))
 
 class MainScreen(Screen):
-    """Placeholder for the STAT/INV/DATA/MAP/RADIO tabs."""
+    """Pip-Boy main UI with a wraparound scroll-in on entry."""
+
+    PAUSE_BEFORE = 0.0      # blank pause before menu appears
+    SCROLL_UP_DURATION = .5    # time spent scrolling up (6 wraps)
+    SCROLL_BACK_DURATION = 0.25  # time to come back down
+    WRAP_COUNT = 6              # number of full screen-heights scrolled up
+
     def __init__(self, app, font):
         super().__init__(app)
         self.font = font
         self.tabs = ["STAT", "INV", "DATA", "MAP", "RADIO"]
         self.active = 0
 
+        # Pre-render the static menu to its own surface (one screen worth)
+        self.menu_surf = pygame.Surface(SCREEN_SIZE, pygame.SRCALPHA)
+        self._render_menu_to(self.menu_surf)
+
+        self.elapsed = 0.0
+        self.settled = False
+
+    def _render_menu_to(self, surface):
+        """Draws the menu onto the given surface at its final layout."""
+        surface.fill((0, 0, 0, 0))   # transparent
+        x = 20
+        base_y = 16
+        for i, tab in enumerate(self.tabs):
+            color = BG if i == self.active else GREEN
+            tab_w = self.font.size(tab)[0]
+            if i == self.active:
+                pygame.draw.rect(surface, GREEN,
+                    (x - 8, base_y - 4, tab_w + 16, self.font.get_height() + 8))
+            surface.blit(self.font.render(tab, True, color), (x, base_y))
+            x += tab_w + 40
+
     def handle_event(self, event):
+        if not self.settled:
+            return
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RIGHT:
                 self.active = (self.active + 1) % len(self.tabs)
+                self._render_menu_to(self.menu_surf)
             elif event.key == pygame.K_LEFT:
                 self.active = (self.active - 1) % len(self.tabs)
+                self._render_menu_to(self.menu_surf)
+
+    def update(self, dt):
+        if self.settled:
+            return
+        self.elapsed += dt
+        total = self.PAUSE_BEFORE + self.SCROLL_UP_DURATION + self.SCROLL_BACK_DURATION
+        if self.elapsed >= total:
+            self.settled = True
+
+    def _scroll_offset(self):
+        """Returns current Y offset from final position (0 = settled)."""
+        t = self.elapsed - self.PAUSE_BEFORE
+        screen_h = SCREEN_SIZE[1]
+
+        if t <= 0:
+            # Hasn't started yet — sit off-screen at bottom
+            return screen_h
+
+        if t < self.SCROLL_UP_DURATION:
+            # Phase 1: scrolling up
+            # Travel from +screen_h down to -(WRAP_COUNT * screen_h)
+            p = t / self.SCROLL_UP_DURATION
+            start = screen_h
+            end = -self.WRAP_COUNT * screen_h
+            return start + (end - start) * p
+
+        t2 = t - self.SCROLL_UP_DURATION
+        if t2 < self.SCROLL_BACK_DURATION:
+            # Phase 2: scrolling back down to settle at 0
+            p = t2 / self.SCROLL_BACK_DURATION
+            # Ease the landing — quadratic deceleration
+            p = 1 - (1 - p) ** 2
+            start = -self.WRAP_COUNT * screen_h
+            end = 0
+            return start + (end - start) * p
+
+        return 0
 
     def draw(self, surface):
         surface.fill(BG)
-        x = 20
-        for i, tab in enumerate(self.tabs):
-            color = BG if i == self.active else GREEN
-            if i == self.active:
-                w = self.font.size(tab)[0] + 16
-                pygame.draw.rect(surface, GREEN, (x - 8, 12, w, self.font.get_height() + 8))
-            surface.blit(self.font.render(tab, True, color), (x, 16))
-            x += self.font.size(tab)[0] + 40
+        offset = int(self._scroll_offset())
+        screen_h = SCREEN_SIZE[1]
+
+        # Tile the menu surface vertically so wrapping looks seamless
+        # Find the topmost copy that's visible
+        y = offset % screen_h
+        if y > 0:
+            y -= screen_h
+
+        # Blit copies until we're past the bottom of the screen
+        while y < screen_h:
+            surface.blit(self.menu_surf, (0, y))
+            y += screen_h
 
 
 class App:
@@ -165,15 +239,16 @@ class App:
         self.frame_screen = FrameScreen(
             self,
             frames_dir=os.path.join(base, "assets", "boot", ""),
-            fps=30,
+            fps=31,
             repeat_section=(223, 246),   # adjust to your indices
-            repeat_count=5,
+            repeat_count=4,
             next_screen=self.main_screen,
         )
 
         # Start with the scroll, which chains into boot, which chains into main
         self.current = self.scroll_screen
         self.boot_sound.play()
+        #self.current = self.main_screen
 
     def change_screen(self, screen):
         self.current = screen
