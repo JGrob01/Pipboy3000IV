@@ -2,7 +2,8 @@ Windows Development:
 cd F:\Pipboy3000IV
 python -m venv .venv
 .venv\Scripts\activate
-python app.py
+$env:PIPBOY_DEV=1
+python main.py
 
 pyuic5 Pipboy3000IV.ui -o ui_test.py
 pyuic5 boot.ui -o boot.py

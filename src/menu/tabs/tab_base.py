@@ -1,6 +1,6 @@
 import pygame
 
-from src.config import GREEN, GREEN_DIM
+from src.config import GREEN, GREEN_MEDIUM, GREEN_DIM
 
 
 class Tab:
@@ -22,19 +22,28 @@ class Tab:
             elif event.key == pygame.K_DOWN:
                 self.active_sub = (self.active_sub + 1) % len(self.sub_tabs)
 
+    def _color_for_distance(self, distance):
+        if distance == 0:
+            return GREEN
+        if distance == 1:
+            return GREEN_MEDIUM
+        if distance == 2:
+            return GREEN_DIM
+        return None
+
     def draw_sub_tabs(self, surface, y):
-        """Draws the sub-tab row at the given y position."""
         x = 20
         for i, name in enumerate(self.sub_tabs):
-            color = GREEN if i == self.active_sub else GREEN_DIM
-            text = self.font.render(name, True, color)
-            surface.blit(text, (x, y))
-            x += text.get_width() + 30
+            distance = abs(i - self.active_sub)
+            color = self._color_for_distance(distance)
+            text_w = self.font.size(name)[0]
+            if color is not None:
+                text = self.font.render(name, True, color)
+                surface.blit(text, (x, y))
+            x += text_w + 30
 
     def draw_content(self, surface, rect):
-        """Override to draw this tab's content within the given rect."""
         pass
 
     def draw_footer(self, surface, rect):
-        """Override to draw this tab's footer within the given rect."""
         pass

@@ -1,5 +1,7 @@
+import pygame
+
 from src.menu.tabs.tab_base import Tab
-from src.config import GREEN
+from src.config import GREEN, GREEN_MEDIUM, BG
 
 
 class InvTab(Tab):
@@ -15,8 +17,21 @@ class InvTab(Tab):
         ))
 
     def draw_footer(self, surface, rect):
-        weight = self.font.render("WEIGHT  42/150", True, GREEN)
-        caps = self.font.render("CAPS  237", True, GREEN)
-        y = rect.top + 5
-        surface.blit(weight, (rect.left + 10, y))
-        surface.blit(caps, (rect.right - caps.get_width() - 10, y))
+        margin = 12
+        gap = 8
+        h = 28
+        y = rect.top + (rect.height - h) // 2
+
+        box_w = (rect.width - margin * 2 - gap) // 2
+
+        weight_rect = pygame.Rect(margin, y, box_w, h)
+        pygame.draw.rect(surface, GREEN_MEDIUM, weight_rect)
+        wt = self.font.render("WEIGHT  42/150", True, GREEN)
+        surface.blit(wt, (weight_rect.left + 10,
+                        weight_rect.centery - wt.get_height() // 2))
+
+        caps_rect = pygame.Rect(weight_rect.right + gap, y, box_w, h)
+        pygame.draw.rect(surface, GREEN_MEDIUM, caps_rect)
+        cp = self.font.render("CAPS  237", True, GREEN)
+        surface.blit(cp, (caps_rect.right - cp.get_width() - 10,
+                        caps_rect.centery - cp.get_height() // 2))

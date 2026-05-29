@@ -123,17 +123,17 @@ class MainScreen(Screen):
         self.current_tab.draw_content(surface, content_rect)
 
         footer_rect = pygame.Rect(0, sh - self.FOOTER_H, sw, self.FOOTER_H)
-        pygame.draw.line(surface, GREEN,
-            (10, footer_rect.top), (sw - 10, footer_rect.top), 1)
         self.current_tab.draw_footer(surface, footer_rect)
 
     def _draw_header(self, surface, rect):
+        """Draws the main tabs with the underline bar that wraps around the active tab."""
         names = [t.name for t in self.tabs]
-        gap = 60
+        gap = 50
         total_w = sum(self.font.size(n)[0] for n in names) + gap * (len(names) - 1)
         x = (rect.width - total_w) // 2
         y = (rect.height - self.font.get_height()) // 2
 
+        # Draw tab labels and record the active tab's x extent
         active_x_start = None
         active_x_end = None
         cursor = x
@@ -142,10 +142,31 @@ class MainScreen(Screen):
             if i == self.active:
                 active_x_start = cursor
                 active_x_end = cursor + w
+            # All header tab labels are full GREEN (white-ish per your spec)
             surface.blit(self.font.render(name, True, GREEN), (cursor, y))
             cursor += w + gap
 
-        if active_x_start is not None:
-            pygame.draw.line(surface, GREEN,
-                (active_x_start, rect.bottom - 4),
-                (active_x_end, rect.bottom - 4), 2)
+        # The horizontal bar runs across the screen at this Y
+        bar_y = rect.bottom - 4
+
+        # Drop tics sit just inside the bar's ends, plus around the active tab
+        tic_height = 10
+        margin = 20  # how far from screen edges the bar starts/ends
+
+        # Horizontal segments of the bar, broken by the active-tab gap
+        # Left segment: from margin → active_x_start - small_gap
+        # Right segment: from active_x_end + small_gap → screen_width - margin
+        gap_around_active = 12  # how far the bar pulls back from the tab edges
+
+        left_end = active_x_start - gap_around_active
+        right_start = active_x_end + gap_around_active
+
+        # Draw the two horizontal segments
+        pygame.draw.line(surface, GREEN, (margin, bar_y), (left_end, bar_y), 2)
+        pygame.draw.line(surface, GREEN, (right_start, bar_y), (rect.width - margin, bar_y), 2)
+
+        # Vertical tics: at outer edges and on either side of the active tab
+        pygame.draw.line(surface, GREEN, (margin, bar_y), (margin, bar_y + tic_height), 2)
+        pygame.draw.line(surface, GREEN, (rect.width - margin, bar_y), (rect.width - margin, bar_y + tic_height), 2)
+        pygame.draw.line(surface, GREEN, (left_end, bar_y), (left_end, bar_y + tic_height), 2)
+        pygame.draw.line(surface, GREEN, (right_start, bar_y), (right_start, bar_y + tic_height), 2)

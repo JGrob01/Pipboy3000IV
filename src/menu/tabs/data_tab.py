@@ -1,3 +1,5 @@
+import pygame
+
 from src.menu.tabs.tab_base import Tab
 from src.config import GREEN
 
