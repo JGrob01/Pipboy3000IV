@@ -61,9 +61,9 @@ class App:
         )
 
         # Start with the scroll, which chains into boot, which chains into main
-        #self.current = self.scroll_screen
-        #self.boot_sound.play()
-        self.current = self.main_screen
+        self.current = self.scroll_screen
+        self.boot_sound.play()
+        #self.current = self.main_screen
 
     def change_screen(self, screen):
         self.current = screen
