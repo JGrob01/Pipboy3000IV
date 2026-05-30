@@ -61,13 +61,13 @@ class Pypboy(game.core.Engine):
 
     def init_modules(self):
         self.modules = {
-            "radio": radio.Module(self),
-            "map": map.Module(self),
+            "passcode": passcode.Module(self),
+            "boot": boot.Module(self),            
+            "stats": stats.Module(self),
             "data": data.Module(self),
             "items": items.Module(self),
-            "stats": stats.Module(self),
-            "boot": boot.Module(self),
-            "passcode": passcode.Module(self)
+            "radio": radio.Module(self),
+            "map": map.Module(self)
         }
         self.switch_module(settings.STARTER_MODULE)  # Set the start screen
 
@@ -201,7 +201,7 @@ class Pypboy(game.core.Engine):
             self._render_scroll()
 
     def _begin_scroll(self):
-        print("SCROLL BEGIN, snapshotting active module:", self.active.__class__.__module__)
+        #print("SCROLL BEGIN, snapshotting active module:", self.active.__class__.__module__)
         self._scroll_surface = self.screen.copy()
         self._scroll_active = True
         self._scroll_elapsed = 0.0
@@ -227,7 +227,7 @@ class Pypboy(game.core.Engine):
         return 0
 
     def _render_scroll(self):
-        print(f"SCROLL elapsed={self._scroll_elapsed:.3f} offset={self._scroll_offset():.1f}")
+        #print(f"SCROLL elapsed={self._scroll_elapsed:.3f} offset={self._scroll_offset():.1f}")
         now = time.time()
         dt = now - self._scroll_prev_time
         self._scroll_prev_time = now

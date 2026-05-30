@@ -201,7 +201,7 @@ class SubMenu(game.Entity):
 
     def _active_tab_center_x(self):
         if not hasattr(self, 'parent') or not hasattr(self.parent, 'pypboy'):
-            print("SubMenu: no parent chain, falling back to center")
+            #print("SubMenu: no parent chain, falling back to center")
             return settings.WIDTH // 2
 
         active_label = None
@@ -223,7 +223,7 @@ class SubMenu(game.Entity):
             return settings.WIDTH // 2
 
         if active_label is None:
-            print("SubMenu: no active label matched, falling back")
+            #print("SubMenu: no active label matched, falling back")
             return settings.WIDTH // 2
 
         # Replicate TopMenu's spacing math

@@ -8,6 +8,9 @@ import pypboy
 import game
 import settings
 
+import cProfile
+import re
+
 
 # Original EFI boot text from boot_text.py
 BOOT_TEXT = ("* 1 0 0x0000A4 0x00000000000000000 start memory discovery 0 0x0000A4 "
