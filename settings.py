@@ -63,7 +63,9 @@ LOCAL_MAP_ZOOM = 17
 EVENTS = {
     'SONG_END': pygame.USEREVENT + 1,
     'PLAYPAUSE': pygame.USEREVENT + 2,
-    'HOLOTAPE_END': pygame.USEREVENT + 3
+    'HOLOTAPE_END': pygame.USEREVENT + 3,
+    'HOLOTAPE_INSERTED': pygame.USEREVENT + 4,
+    'HOLOTAPE_REMOVED':  pygame.USEREVENT + 5
 }
 
 MODULES = {

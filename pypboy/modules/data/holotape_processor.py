@@ -64,6 +64,29 @@ class Module(pypboy.SubModule):
         self.active_holotape = self.holotapes[holotape]
 
     def handle_event(self, event):
+        if event.type == settings.EVENTS['HOLOTAPE_INSERTED']:
+            folder = event.folder
+            if folder is None:
+                print(f"[holotape] unknown UID {event.uid} — open registration UI here")
+                return
+            # find the loaded holotape whose directory matches the folder
+            for i, h in enumerate(self.holotapes):
+                if h.directory == folder:
+                    self.select_holotape(i)
+                    self.add(self.active_holotape)
+                    settings.hide_top_menu = True
+                    settings.hide_submenu = True
+                    settings.hide_main_menu = True
+                    settings.hide_footer = False
+                    self.active_holotape.write_display(0, False)
+                    return
+            print(f"[holotape] folder '{folder}' not found in loaded holotapes")
+            return
+
+        if event.type == settings.EVENTS['HOLOTAPE_REMOVED']:
+            self.handle_resume()       # your existing teardown
+            return
+        
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_RETURN:
 

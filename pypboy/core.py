@@ -102,13 +102,11 @@ class Pypboy(game.core.Engine):
             return
         
         # Lazy construct if we haven't built it yet
-        if module != "boot":
-            for cmodule in self._module_factories:
-                if cmodule not in self.modules:
-                    print(f"Lazy-loading module: {cmodule}")
-                    t0 = time.time()
-                    self.modules[cmodule] = self._module_factories[cmodule]()
-                    print(f"  loaded in {time.time()-t0:.2f}s")
+        if module not in self.modules:
+            print(f"Lazy-loading module: {module}")
+            t0 = time.time()
+            self.modules[module] = self._module_factories[module]()
+            print(f"  loaded in {time.time()-t0:.2f}s")
 
         # if not settings.hide_top_menu:
         if module in self.modules:

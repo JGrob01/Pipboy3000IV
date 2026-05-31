@@ -5,6 +5,8 @@ import optparse
 import sys
 import settings
 
+from pypboy.rfid import HolotapeReader
+
 #Enable use of cached map via "-c True" command
 parser = optparse.OptionParser(usage='python %prog -c True\nor:\npython %prog -c True', version="0.0.1", prog=sys.argv[0])
 parser.add_option('-c','--cached-map', action="store_true", help="Loads the cached map file stored in map.cache", dest="load_cached", default=False)
@@ -31,6 +33,11 @@ except Exception as e:
 from pypboy.core import Pypboy
 
 if __name__ == "__main__":
+    reader = HolotapeReader()
+    if settings.GPIO_AVAILABLE:
+        reader.start()
+        settings.holotape_reader = reader
+    
     boy = Pypboy('Pip-Boy 3000 MK IV', settings.WIDTH, settings.HEIGHT)
     print("RUN")
     boy.run()
