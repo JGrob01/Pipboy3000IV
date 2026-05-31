@@ -207,7 +207,7 @@ class Boot(game.Entity):
 
      # -------- Timing knobs (seconds) --------
     CHAR_DELAY = 0.008
-    BLINK_DELAY = 0.08
+    BLINK_DELAY = 0.07
     LINE_PAUSE = 0.0
     HOLD_AFTER_TYPING = 0.0
     SCROLL_PX_PER_SEC = 750   # final scroll-up speed
@@ -225,6 +225,7 @@ class Boot(game.Entity):
         self.rect = self.image.get_rect()
         
         self.text_array = [
+            "▯", "▯", "▯", "~", "~", "~", "~", "~",
             "▯", "▯", "▯", "~", "~", "~", "~", "~",
             "▯", "▯", "▯", "~", "~", "~", "~", "~",
             "▯", "▯", "▯", "~", "~", "~", "~", "~",
@@ -283,6 +284,12 @@ class Boot(game.Entity):
         self.frame_paths = sorted(glob.glob(os.path.join(frames_dir, "*.png")))
         if not self.frame_paths:
             print("WARNING: no PNG frames found in", frames_dir)
+        
+        # Preload all frames into memory once
+        self.frames = []
+        for path in self.frame_paths:
+            self.frames.append(pygame.image.load(path).convert_alpha())
+        print(f"Boot: preloaded {len(self.frames)} frames")
 
         # State
         self.phase = self.PHASE_SCROLL
@@ -437,12 +444,14 @@ class Boot(game.Entity):
 
     def _render_frames(self, now):
         print(f"FRAMES: paths={len(self.frame_paths)} idx={self._frame_index} elapsed_frames={self._frames_elapsed}")
-        if not self.frame_paths:
+        
+        if self.rect[1] != 0:
+            self.rect[1] = 0
+
+        if not self.frames:
             self._finish()
             return
 
-        # Advance one frame at a time at the target rate. Using a counter
-        # rather than int(elapsed / frame_duration) so repeat logic works.
         elapsed = now - self.phase_start
         target_count = int(elapsed / self.frame_duration)
 
@@ -450,7 +459,6 @@ class Boot(game.Entity):
             self._frames_elapsed += 1
             next_index = self._frame_index + 1
 
-            # Handle repeat section
             if self.repeat_section is not None:
                 start, end = self.repeat_section
                 if (next_index > end
@@ -458,17 +466,19 @@ class Boot(game.Entity):
                     self._repeats_done += 1
                     next_index = start
 
-            if next_index >= len(self.frame_paths):
+            if next_index >= len(self.frames):
                 self._finish()
                 return
 
             self._frame_index = next_index
-            self._frame_surface = pygame.image.load(
-                self.frame_paths[next_index]
-            ).convert_alpha()
-            print(f"  loaded frame {next_index}: {self.frame_paths[next_index]} size={self._frame_surface.get_size()}")
-            self.image.fill(settings.black) 
-            # Only blit when the frame actually changes — no fill, no flash
+            self._frame_surface = self.frames[next_index]
+            self.image.fill(settings.black)
+            self.image.blit(self._frame_surface, (0, 0))
+
+        if self._frame_index == -1:
+            self._frame_index = 0
+            self._frame_surface = self.frames[0]
+            self.image.fill(settings.black)
             self.image.blit(self._frame_surface, (0, 0))
 
         # First entry into frames phase: paint frame 0 immediately
@@ -485,6 +495,9 @@ class Boot(game.Entity):
         if self.phase == self.PHASE_DONE:
             return
         self.phase = self.PHASE_DONE
+        self.frames = []
+        self._frame_surface = None
+        self.text_surf = None
         self.image.fill(settings.black)
         if hasattr(self, 'parent_module'):
             self.parent_module._finished = True
