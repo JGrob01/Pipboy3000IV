@@ -207,7 +207,7 @@ class Boot(game.Entity):
 
      # -------- Timing knobs (seconds) --------
     CHAR_DELAY = 0.008
-    BLINK_DELAY = 0.07
+    BLINK_DELAY = 0.05
     LINE_PAUSE = 0.0
     HOLD_AFTER_TYPING = 0.0
     SCROLL_PX_PER_SEC = 750   # final scroll-up speed
@@ -243,8 +243,6 @@ class Boot(game.Entity):
             " 38911 BYTES FREE ",
             " NO HOLOTAPE FOUND ",
             " LOAD ROM(1): DEITRIX 303 ",
-            "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
-            "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^",
             "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
             "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^",
             "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",

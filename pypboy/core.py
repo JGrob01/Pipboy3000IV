@@ -61,13 +61,13 @@ class Pypboy(game.core.Engine):
 
     def init_modules(self):
         self.modules = {
-            "radio": radio.Module(self),
-            "map": map.Module(self),
-            "data": data.Module(self),
-            "items": items.Module(self),
+            #"radio": radio.Module(self),
+            #"map": map.Module(self),
+            #"data": data.Module(self),
+            #"items": items.Module(self),
             "stats": stats.Module(self),
             "boot": boot.Module(self),
-            "passcode": passcode.Module(self)
+            #"passcode": passcode.Module(self)
         }
         self.switch_module(settings.STARTER_MODULE)  # Set the start screen
 
