@@ -210,7 +210,7 @@ class Boot(game.Entity):
     BLINK_DELAY = 0.08
     LINE_PAUSE = 0.0
     HOLD_AFTER_TYPING = 0.0
-    SCROLL_PX_PER_SEC = 600   # final scroll-up speed
+    SCROLL_PX_PER_SEC = 750   # final scroll-up speed
     SCROLL_DISTANCE = 500     # how far to scroll before advancing
 
     LINE_HEIGHT = 24
@@ -251,7 +251,7 @@ class Boot(game.Entity):
             "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
             "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^",
             "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
-        ]        
+        ]
         
         self.image = pygame.Surface((settings.WIDTH, settings.HEIGHT))
         self.image.fill(settings.black)
@@ -307,6 +307,8 @@ class Boot(game.Entity):
         self.hold_started = None
         self.scroll_started = None
         self._scroll_prev_time = None
+        self._char_budget = 0.0
+        self._char_prev_time = None
         
         self.phase = self.PHASE_SCROLL
         self.phase_start = None
@@ -336,10 +338,23 @@ class Boot(game.Entity):
 
     def _render_pip(self, now):
         if self.pipphase == "typing":
-            for _ in range(2):
-                if self.pipphase != "typing":
-                    break
+            # Accumulate "characters owed" based on real time
+            if not hasattr(self, '_char_budget'):
+                self._char_budget = 0.0
+                self._char_prev_time = now
+            if self._char_prev_time == None:
+                self._char_prev_time = now
+            dt = now - self._char_prev_time
+            self._char_prev_time = now
+            if dt > 0.1:
+                dt = 0.1   # clamp to avoid huge catch-up after a stall
+            self._char_budget += dt * 60
+
+            safety = 600
+            while self._char_budget >= 1.0 and self.pipphase == "typing" and safety > 0:
                 self._advance_typing(now)
+                self._char_budget -= 1.0
+                safety -= 1
 
         elif self.pipphase == "hold":
             if now - self.hold_started >= self.HOLD_AFTER_TYPING:
