@@ -25,6 +25,7 @@ class Pypboy(game.core.Engine):
     SCROLL_UP_DURATION = 0.5
     SCROLL_BACK_DURATION = 0.25
     SCROLL_WRAP_COUNT = 6
+    EAGER_MODULES = {"stats", "boot"}
 
     def __init__(self, *args, **kwargs):
         # Support rescaling
@@ -60,16 +61,22 @@ class Pypboy(game.core.Engine):
         pass
 
     def init_modules(self):
-        self.modules = {
-            #"radio": radio.Module(self),
-            #"map": map.Module(self),
-            #"data": data.Module(self),
-            #"items": items.Module(self),
-            "stats": stats.Module(self),
-            "boot": boot.Module(self),
-            #"passcode": passcode.Module(self)
+        # Module constructor functions, called lazily on first switch
+        self._module_factories = {
+            "radio": lambda: radio.Module(self),
+            "map": lambda: map.Module(self),
+            "data": lambda: data.Module(self),
+            "items": lambda: items.Module(self),
+            "stats": lambda: stats.Module(self),
+            "boot": lambda: boot.Module(self),
+            "passcode": lambda: passcode.Module(self),
         }
-        self.switch_module(settings.STARTER_MODULE)  # Set the start screen
+        self.modules = {}
+        # Eagerly construct only what's needed for first boot
+        for name in self.EAGER_MODULES:
+            self.modules[name] = self._module_factories[name]()
+        settings.engine_ready = True
+        self.switch_module(settings.STARTER_MODULE)
 
     def init_gpio_controls(self):
         for pin in settings.gpio_actions.keys():
@@ -90,6 +97,19 @@ class Pypboy(game.core.Engine):
     #         self.active.render()
 
     def switch_module(self, module):
+        if module not in self._module_factories:
+            print("Module '%s' not implemented." % module)
+            return
+        
+        # Lazy construct if we haven't built it yet
+        if module != "boot":
+            for cmodule in self._module_factories:
+                if cmodule not in self.modules:
+                    print(f"Lazy-loading module: {cmodule}")
+                    t0 = time.time()
+                    self.modules[cmodule] = self._module_factories[cmodule]()
+                    print(f"  loaded in {time.time()-t0:.2f}s")
+
         # if not settings.hide_top_menu:
         if module in self.modules:
             if hasattr(self, 'active'):

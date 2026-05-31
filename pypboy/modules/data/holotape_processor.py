@@ -91,8 +91,8 @@ class Module(pypboy.SubModule):
         super(Module, self).handle_resume()
         if hasattr(self, 'active_holotape') and self.active_holotape:
             self.active_holotape.clear_display()
-        if self.active_holotape.alive():
-            self.remove(self.active_holotape)
+            if self.active_holotape.alive():
+                self.remove(self.active_holotape)
         if self.paused:
             self.paused = False
             settings.hide_top_menu = False
@@ -102,7 +102,8 @@ class Module(pypboy.SubModule):
 
     def handle_pause(self):
         # print("Holotape paused")
-        self.active_holotape.clear_display()
+        if hasattr(self, 'active_holotape') and self.active_holotape:
+            self.active_holotape.clear_display()
 
     def get_data(self):
         # Get list of folders

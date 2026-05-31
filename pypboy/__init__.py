@@ -53,6 +53,11 @@ class BaseModule(game.EntityGroup):
             self.module_change_sfx = pygame.mixer.Sound('sounds/pipboy/UI_Pipboy_OK.ogg')
             self.module_change_sfx.set_volume(settings.VOLUME)
 
+        for mod in self.submodules:
+            self.submenu.menu.append(mod.label)
+        print(f"BaseModule {self.__class__.__module__}: submodules = "
+              f"{[type(m).__module__ for m in self.submodules]}")
+
     def move(self, x, y):
         super(BaseModule, self).move(x, y)
         if hasattr(self, 'active'):

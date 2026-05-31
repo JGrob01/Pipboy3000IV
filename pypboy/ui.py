@@ -585,11 +585,14 @@ class Menu(game.Entity):
             self.dial_move_sfx.set_volume(settings.VOLUME)
 
     def select(self, item):
+        self.selected = item
         if not settings.hide_main_menu:
-            self.selected = item
             self.redraw()
-            if len(self.callbacks) > item and self.callbacks[item]:
-                self.callbacks[item]()
+        else:
+            # Mark dirty so a later render will redraw
+            self._dirty = True
+        if len(self.callbacks) > item and self.callbacks[item]:
+            self.callbacks[item]()
 
     def handle_action(self, action):
         if not settings.hide_main_menu:
@@ -746,12 +749,23 @@ class Menu(game.Entity):
                 self.image.blit(self.arrow_img_down, (20, 454))
 
     def render(self, *args, **kwargs):
+        if not hasattr(self, '_dbg_done'):
+            self._dbg_done = True
+            print(f"Menu render: source_array len={len(self.source_array)}, "
+                  f"menu_array len={len(self.menu_array)}, "
+                  f"selected={self.selected}, "
+                  f"hide_main_menu={settings.hide_main_menu}")
+            
         if settings.hide_main_menu and settings.hide_main_menu != 3:
             settings.hide_main_menu = 3
             self.image.fill(settings.black)
             self.saved_selection = self.selected
 
         elif not settings.hide_main_menu:
+            if getattr(self, '_dirty', False):
+                self._dirty = False
+                self.redraw()
+                
             if self.saved_selection:
                 self.select(self.saved_selection)
                 self.saved_selection = None
