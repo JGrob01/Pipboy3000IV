@@ -142,7 +142,7 @@ class Module(pypboy.SubModule):
 
     SCROLL_DURATION = 4.1333  # seconds for the text to scroll across the screen
     FRAME_FPS = 31
-    REPEAT_SECTION = (223, 246)
+    REPEAT_SECTION = (34, 57)
     REPEAT_COUNT = 4
 
     def __init__(self, *args, **kwargs):
@@ -156,6 +156,9 @@ class Module(pypboy.SubModule):
         )
         self.boot.rect[0] = 0
         self.boot.rect[1] = 0
+        self.boot.line = 0
+        self.boot.char = 0
+        self.boot.y = 0
         self.add(self.boot)
 
         self._sound_playing = False
@@ -198,12 +201,58 @@ class Boot(game.Entity):
     """
 
     PHASE_SCROLL = 0
+    PHASE_PIP = 3
     PHASE_FRAMES = 1
     PHASE_DONE = 2
+
+     # -------- Timing knobs (seconds) --------
+    CHAR_DELAY = 0.008
+    BLINK_DELAY = 0.08
+    LINE_PAUSE = 0.0
+    HOLD_AFTER_TYPING = 0.0
+    SCROLL_PX_PER_SEC = 600   # final scroll-up speed
+    SCROLL_DISTANCE = 500     # how far to scroll before advancing
+
+    LINE_HEIGHT = 24
+    FONT = None  # set lazily so settings is fully loaded
 
     def __init__(self, scroll_duration=6.0, frame_fps=31,
                  repeat_section=None, repeat_count=0):
         super(Boot, self).__init__()
+        
+        self.image = pygame.Surface((settings.WIDTH, settings.HEIGHT))
+        self.image.fill(settings.black)
+        self.rect = self.image.get_rect()
+        
+        self.text_array = [
+            "▯", "▯", "▯", "~", "~", "~", "~", "~",
+            "▯", "▯", "▯", "~", "~", "~", "~", "~",
+            "▯", "▯", "▯", "~", "~", "~", "~", "~",
+            "▯", "▯", "▯", "~", "~", "~", "~", "~",
+            "▯", "▯", "▯", "~", "~", "~", "~", "~",
+            "*************** PIP-05 (R) V7 .1.0.8 ************** ",
+            " ",
+            " ",
+            " ",
+            " ",
+            " COPYRIGHT 2075 ROBCO(R) ",
+            " LOADER VI.1 ",
+            " EXEC VERSION 41.10 ",
+            " 264k RAM SYSTEM ",
+            " 38911 BYTES FREE ",
+            " NO HOLOTAPE FOUND ",
+            " LOAD ROM(1): DEITRIX 303 ",
+            "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
+            "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^",
+            "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
+            "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^",
+            "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
+            "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^",
+            "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
+            "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^", "^",
+            "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@", "@",
+        ]        
+        
         self.image = pygame.Surface((settings.WIDTH, settings.HEIGHT))
         self.image.fill(settings.black)
 
@@ -244,13 +293,26 @@ class Boot(game.Entity):
         self._frame_index = -1
         self._frame_surface = None
 
+        self.reset()
+
     def reset(self):
+        self.image.fill(settings.black)
+        self.rect[1] = 0
+        self.top = 0
+        self.line = 0
+        self.char = 0
+        self.y = 0
+        self.pipphase = "typing"
+        self.next_tick = time.time()
+        self.hold_started = None
+        self.scroll_started = None
+        self._scroll_prev_time = None
+        
         self.phase = self.PHASE_SCROLL
         self.phase_start = None
         self.prev_time = 0.0
         self._frame_index = -1
         self._frame_surface = None
-        self.image.fill(settings.black)
         self._repeats_done = 0
         self._frames_elapsed = 0
 
@@ -268,11 +330,98 @@ class Boot(game.Entity):
         self.image.blit(self.text_surf, (0, y))
 
         if elapsed >= self.scroll_duration:
-            self.phase = self.PHASE_FRAMES
+            self.phase = self.PHASE_PIP
             self.phase_start = now
             self.prev_time = now
 
+    def _render_pip(self, now):
+        if self.pipphase == "typing":
+            for _ in range(2):
+                if self.pipphase != "typing":
+                    break
+                self._advance_typing(now)
+
+        elif self.pipphase == "hold":
+            if now - self.hold_started >= self.HOLD_AFTER_TYPING:
+                self.pipphase = "scroll"
+                self.scroll_started = now
+                self._scroll_prev_time = now
+
+        elif self.pipphase == "scroll":
+            dt = now - self._scroll_prev_time
+            self._scroll_prev_time = now
+            self.top -= self.SCROLL_PX_PER_SEC * dt
+            self.rect[1] = round(self.top)
+            if self.top <= -self.SCROLL_DISTANCE:
+                self.pipphase = "done"
+                self.top = 0
+                self.rect[1] = 0
+                self.image.fill(settings.black)
+                self.phase = self.PHASE_FRAMES
+                self.phase_start = now
+                self.prev_time = now
+                self._render_frames(now)
+
+    def _blit_line(self, text, pos):
+        surf = settings.TechMono[26].render(text, True, settings.bright, (0, 0, 0))
+        self.image.blit(surf, pos)
+
+    def _advance_typing(self, now):
+        """Run one typing step. Returns True if we made progress."""
+        if self.line >= len(self.text_array):
+            self.pipphase = "hold"
+            self.hold_started = now
+            return False
+
+        text = self.text_array[self.line]
+
+        # ---- special one-shot tokens (top-of-screen blinkers) ----
+        if text == "▯":
+            self._blit_line("▯", (0, 0))
+            self.line += 1
+            self.next_tick = now + self.BLINK_DELAY
+            return True
+        if text == "~":
+            self._blit_line(" ", (0, 0))
+            self.line += 1
+            self.next_tick = now + self.BLINK_DELAY
+            return True
+        if text == "@":
+            self._blit_line("▯", (355, 264))
+            self.line += 1
+            self.next_tick = now + self.BLINK_DELAY
+            return True
+        if text == "^":
+            self._blit_line(" ", (355, 264))
+            self.line += 1
+            self.next_tick = now + self.BLINK_DELAY
+            return True
+        if text == "/":
+            self._blit_line(" ", (0, 0))
+            self.line += 1
+            self.next_tick = now + self.BLINK_DELAY
+            return True
+
+        # ---- regular line: type one character at a time ----
+        if self.char < len(text):
+            partial = text[:self.char + 1] + "▯"
+            self._blit_line(partial, (0, self.y))
+            self.char += 1
+            return True
+
+        # Wipe the line area (cursor column included) before the clean paint
+        char_w = settings.TechMono[26].size(" ")[0]
+        wipe_w = (len(text) + 2) * char_w
+        wipe_rect = pygame.Rect(0, self.y, wipe_w, self.LINE_HEIGHT)
+        self.image.fill((0, 0, 0), wipe_rect)
+        self._blit_line(text, (0, self.y))
+        self.y += self.LINE_HEIGHT
+        self.char = 0
+        self.line += 1
+        return True
+
     def _render_frames(self, now):
+        print(f"FRAMES: paths={len(self.frame_paths)} idx={self._frame_index} elapsed_frames={self._frames_elapsed}")
         if not self.frame_paths:
             self._finish()
             return
@@ -302,6 +451,7 @@ class Boot(game.Entity):
             self._frame_surface = pygame.image.load(
                 self.frame_paths[next_index]
             ).convert_alpha()
+            print(f"  loaded frame {next_index}: {self.frame_paths[next_index]} size={self._frame_surface.get_size()}")
             self.image.fill(settings.black) 
             # Only blit when the frame actually changes — no fill, no flash
             self.image.blit(self._frame_surface, (0, 0))
@@ -312,6 +462,7 @@ class Boot(game.Entity):
             self._frame_surface = pygame.image.load(
                 self.frame_paths[0]
             ).convert_alpha()
+            print(f"  first-entry loaded frame 0 size={self._frame_surface.get_size()}")
             self.image.fill(settings.black) 
             self.image.blit(self._frame_surface, (0, 0))
 
@@ -341,6 +492,12 @@ class Boot(game.Entity):
 
         if self.phase == self.PHASE_SCROLL:
             self._render_scroll(now)
+        elif self.phase == self.PHASE_PIP:
+            self._render_pip(now)
         elif self.phase == self.PHASE_FRAMES:
             self._render_frames(now)
-        # PHASE_DONE: do nothing; the engine will switch modules on the F1 event
+        
+        # Debug — once per second, log state
+        if not hasattr(self, '_dbg_last') or now - self._dbg_last > 1.0:
+            self._dbg_last = now
+            print(f"BOOT: phase={self.phase} image_size={self.image.get_size()} rect={self.rect}")
