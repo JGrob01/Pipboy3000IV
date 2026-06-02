@@ -105,6 +105,7 @@ ACTIONS = {
     pygame.K_KP_MINUS: "zoom_out",
 }
 
+GPIO_AVAILABLE = False
 # Using GPIO.BCM as mode
 # GPIO 23 pin16 reboot
 # GPIO 25 pin 22 blank screen do not use
@@ -377,6 +378,10 @@ glitch_next = 0
 #
 # # Generate waveforms at song load
 # do_not_use_cache = True
+
+# Radio broadcast epoch — fixed anchor so all clients/installs share the same schedule.
+# Jan 1 2024 00:00:00 UTC
+BROADCAST_EPOCH = 1704067200.0
 
 # Set the target frames_per_second
 frame_per_second = 31
