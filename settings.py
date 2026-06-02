@@ -23,7 +23,7 @@ SHOW_FPS = False
 
 # Menu Position
 menu_x = 10
-menu_y = 140
+menu_y = 116
 
 # Menu Position
 footer_x = 0
@@ -31,7 +31,7 @@ footer_y = 654
 
 # Description box Position
 description_box_x = 350
-description_box_y = 240
+description_box_y = 320
 
 # COLORS
 black = (0, 0, 0)

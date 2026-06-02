@@ -14,6 +14,8 @@ class Module(pypboy.SubModule):
         self.menu = pypboy.ui.Menu(settings.AMMO)
         self.menu.rect[0] = settings.menu_x
         self.menu.rect[1] = settings.menu_y
+        self.menu.image_offset_y = 0
+        self.menu.description_offset_y = 0
         self.add(self.menu)
 
         self.topmenu = pypboy.ui.TopMenu()

@@ -21,6 +21,8 @@ class Module(pypboy.SubModule):
         self.menu = pypboy.ui.Menu(settings.SPECIAL)
         self.menu.rect[0] = settings.menu_x
         self.menu.rect[1] = settings.menu_y
+        self.menu.image_offset_y = 20
+        self.menu.description_offset_y = 0
         self.add(self.menu)
 
         self.footer = pypboy.ui.Footer(settings.STATUS_FOOTER)

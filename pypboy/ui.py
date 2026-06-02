@@ -21,13 +21,10 @@ def word_wrap(surf, text, font):
         bounds = font.get_rect(word)
         if x + bounds.width + bounds.x >= width:
             x, y = 0, y + line_spacing
-        # if x + bounds.width + bounds.x >= width:
-        #    raise ValueError("word too wide for the surface")
-        # if y + bounds.height - bounds.y >= height:
-        #    raise ValueError("text to long for the surface")
         font.render_to(surf, (x, y), word, settings.bright, None, 1)
         x += bounds.width
-    return x, y
+    # Return rendered bottom edge in surface coordinates
+    return y + line_spacing
 
 
 def load_svg(filename, width, height):
@@ -155,7 +152,7 @@ class Overlay(game.Entity):
 class SubMenu(game.Entity):
 
     # Layout
-    ITEM_GAP = 25        # horizontal gap between submenu items, in pixels
+    ITEM_GAP = 15        # horizontal gap between submenu items, in pixels
     SLIDE_SPEED = 450         # pixels/second for the smooth scroll
     # Brightness ramp: index 0 = selected, 1 = neighbor, 2 = next out, 3+ = invisible
     BRIGHTNESS = [None, None, None]  # filled in __init__ from settings
@@ -194,7 +191,7 @@ class SubMenu(game.Entity):
         key = (text, tier)
         if key not in self._text_cache:
             color = self.BRIGHTNESS[tier]
-            self._text_cache[key] = settings.RobotoR[30].render(
+            self._text_cache[key] = settings.RobotoR[28].render(
                 text, True, color, settings.black
             )
         return self._text_cache[key]
@@ -563,8 +560,14 @@ class Menu(game.Entity):
         self.menu_array = self.source_array[self.top_of_menu:self.max_items]  # List the array for display
         self.prev_selection = 0
 
-        self.descriptionbox = pygame.Surface((360, 300))
+        self.descriptionbox = pygame.Surface((360, 400))
         self.imagebox = pygame.Surface((240, 240))
+
+        self.image_offset_x = 400
+        self.image_offset_y = 0
+        self.description_offset_x = 0
+        self.description_offset_y = 0
+        self.description_bottom_offset = 42
 
         self.saved_selection = 0
 
@@ -615,6 +618,7 @@ class Menu(game.Entity):
     def redraw(self):
         self.image.fill((0, 0, 0))
         offset = 38
+        image_bottom_y = 0
 
         # print("Selected - ",self.selected)
         if self.selected > self.max_items - 1:
@@ -636,15 +640,13 @@ class Menu(game.Entity):
 
             if i == self.selected:
                 # print("Selected Index = ", i)
-                text = settings.RobotoB[30].render(" %s " % self.menu_array[i][0], True, (0, 0, 0),
-                                                   (settings.bright))
+                text = settings.RobotoR[26].render(" %s " % self.menu_array[i][0], True, (0, 0, 0), (settings.bright))
                 try:
-                    number = settings.RobotoB[30].render(" %s " % self.menu_array[i][1], True, (0, 0, 0),
-                                                         (settings.bright))
+                    number = settings.RobotoB[26].render(" %s " % self.menu_array[i][1], True, (0, 0, 0), (settings.bright))
                 except:
                     number = ""
 
-                selected_rect = (0, offset, settings.menu_x + 330, text.get_size()[1])
+                selected_rect = (0, offset-4, settings.menu_x + 330, text.get_size()[1]+8)
                 pygame.draw.rect(self.image, (settings.bright), selected_rect)
 
                 self.images = []
@@ -658,18 +660,19 @@ class Menu(game.Entity):
                                 self.frameorder = []
                                 # print(filename)
                             if filename.endswith(".svg"):
-                                svg_surface = load_svg(self.image_url + "/" + filename, self.imagebox.get_width(),
-                                                       self.imagebox.get_height())
+                                svg_surface = load_svg(self.image_url + "/" + filename, self.imagebox.get_width(), self.imagebox.get_height())
                                 self.images.append(svg_surface)
                                 self.frameorder = []
                                 # print(filename)
                             if filename == "frameorder.py":
                                 url = self.image_url + "/" + filename
                                 # print ("url =",url)
-                                file = imp.load_source("frameorder.py",
-                                                       os.path.join(self.image_url, "frameorder.py"))
+                                file = imp.load_source("frameorder.py", os.path.join(self.image_url, "frameorder.py"))
                                 self.frameorder = file.frameorder
                                 self.frame = 0
+                        if self.images:
+                            # Find tightest bounding box of the first frame
+                            image_bottom_y = self.images[0].get_height()
 
                     else:
                         if self.image_url:
@@ -679,10 +682,12 @@ class Menu(game.Entity):
                                 graphic = load_svg(self.image_url, self.imagebox.get_width(),
                                                    self.imagebox.get_height())
                                 self.imagebox.blit(graphic, (0, 0))
-                                self.image.blit(self.imagebox, (400, 0))
+                                self.image.blit(self.imagebox, (self.image_offset_x, self.image_offset_y))
+                                image_bottom_y = graphic.get_height()
                             else:
                                 graphic = pygame.image.load(self.image_url).convert_alpha()
-                                self.image.blit(graphic, (0, 0))
+                                self.image.blit(graphic, (self.image_offset_x, self.image_offset_y))
+                                image_bottom_y = graphic.get_height()
 
 
 
@@ -697,8 +702,10 @@ class Menu(game.Entity):
                 if description:
                     self.descriptionbox.fill((0, 0, 0))
                     # description = settings.RobotoB[24].render(self.description[i], True, (settings.bright), (0, 0, 0))
-                    word_wrap(self.descriptionbox, description, settings.FreeRobotoR[20])
-                    self.image.blit(self.descriptionbox, (settings.description_box_x, settings.description_box_y))
+                    word_wrap(self.descriptionbox, description, settings.FreeRobotoR[26])
+                    self.image.blit(self.descriptionbox,
+                        (settings.description_box_x + self.description_offset_x,
+                        settings.description_box_y + self.description_offset_y))
 
                 try:
                     stats = self.menu_array[i][4]
@@ -709,24 +716,49 @@ class Menu(game.Entity):
                     stat_offset = 0
                     self.descriptionbox.fill((0, 0, 0))
                     for each in stats:
-                        stat_text = settings.RobotoB[30].render(" %s " % each[0], True, (settings.bright),
-                                                                (settings.dark))
-                        stat_number = settings.RobotoB[30].render(" %s " % each[1], True, (settings.bright),
-                                                                  (settings.dark))
-                        stat_rect = (0, stat_offset, 350, stat_text.get_size()[1])
-                        pygame.draw.rect(self.descriptionbox, (settings.dark), stat_rect)
-                        self.descriptionbox.blit(stat_text, (0, stat_offset))
-                        self.descriptionbox.blit(stat_number, (350 - stat_number.get_size()[0], stat_offset))
-                        stat_offset += stat_text.get_size()[1] + 6
+                        if each[0] == "Damage":
+                            stat_text = settings.RobotoR[26].render(" %s " % each[0], True, (settings.bright), (settings.dim))
+                            stat_number = settings.RobotoB[26].render(" %s " % each[1], True, (settings.bright), (settings.dim))
+                            stat_rect = (0, stat_offset, 225, stat_text.get_size()[1]+3)
+                            pygame.draw.rect(self.descriptionbox, (settings.dim), stat_rect)
+                            self.descriptionbox.blit(stat_text, (0, stat_offset))
+                            self.descriptionbox.blit(stat_number, (225 - stat_number.get_size()[0], stat_offset))
+                            stat_offset += stat_text.get_size()[1] + 6
+                        elif each[0] == "10mm":
+                            stat_text = settings.RobotoR[26].render(" %s " % each[0], True, (settings.bright), (settings.dim))
+                            stat_number = settings.RobotoB[26].render(" %s " % each[1], True, (settings.bright), (settings.dim))
+                            stat_rect = (0, stat_offset, 225, stat_text.get_size()[1]+3)
+                            pygame.draw.rect(self.descriptionbox, (settings.dim), stat_rect)
+                            self.descriptionbox.blit(stat_text, (0, stat_offset))
+                            self.descriptionbox.blit(stat_number, (225 - stat_number.get_size()[0], stat_offset))
+                            stat_offset += stat_text.get_size()[1] + 6
+                        elif each[0] == "Cell":
+                            stat_text = settings.RobotoR[26].render(" %s " % each[0], True, (settings.bright), (settings.dim))
+                            stat_number = settings.RobotoB[26].render(" %s " % each[1], True, (settings.bright), (settings.dim))
+                            stat_rect = (0, stat_offset, 225, stat_text.get_size()[1]+3)
+                            pygame.draw.rect(self.descriptionbox, (settings.dim), stat_rect)
+                            self.descriptionbox.blit(stat_text, (0, stat_offset))
+                            self.descriptionbox.blit(stat_number, (225 - stat_number.get_size()[0], stat_offset))
+                            stat_offset += stat_text.get_size()[1] + 6
+                        else:
+                            stat_text = settings.RobotoR[26].render(" %s " % each[0], True, (settings.bright), (settings.dark))
+                            stat_number = settings.RobotoB[26].render(" %s " % each[1], True, (settings.bright), (settings.dark))
+                            stat_rect = (0, stat_offset, 225, stat_text.get_size()[1]+3)
+                            pygame.draw.rect(self.descriptionbox, (settings.dark), stat_rect)
+                            self.descriptionbox.blit(stat_text, (0, stat_offset))
+                            self.descriptionbox.blit(stat_number, (225 - stat_number.get_size()[0], stat_offset))
+                            stat_offset += stat_text.get_size()[1] + 6
 
-                    self.image.blit(self.descriptionbox, (settings.description_box_x, settings.description_box_y))
+                    footer_top_in_menu_space = settings.footer_y - settings.menu_y
+                    stats_bottom_target = footer_top_in_menu_space - self.description_bottom_offset
+                    blit_y = stats_bottom_target - stat_offset
+
+                    self.image.blit(self.descriptionbox, (settings.description_box_x + self.description_offset_x + 75, blit_y+4))
 
             else:
-                text = settings.RobotoB[30].render(" %s " % self.menu_array[i][0], True, (settings.bright),
-                                                   (0, 0, 0))
+                text = settings.RobotoR[26].render(" %s " % self.menu_array[i][0], True, (settings.bright), (0, 0, 0))
                 try:
-                    number = settings.RobotoB[30].render(" %s " % self.menu_array[i][1], True, (settings.bright),
-                                                         (0, 0, 0))
+                    number = settings.RobotoB[26].render(" %s " % self.menu_array[i][1], True, (settings.bright), (0, 0, 0))
                 except:
                     number = None
 
@@ -737,7 +769,7 @@ class Menu(game.Entity):
 
             if number:
                 self.image.blit(number, (settings.menu_x + 330 - number.get_size()[0], offset))
-            offset += text.get_size()[1] + 6
+            offset += text.get_size()[1] + 10
 
         # Handle the up/down arrows for long lists
         if len(self.source_array) > len(self.menu_array):
@@ -791,6 +823,6 @@ class Menu(game.Entity):
                     self.file = self.images[self.index]
                     self.imagebox.blit(self.file, (0, 0))
                     self.imagebox.fill(settings.bright, None, pygame.BLEND_RGBA_MULT)
-                    self.image.blit(self.imagebox, (400, 0))
+                    self.image.blit(self.imagebox, (self.image_offset_x, self.image_offset_y))
 
                     self.index += 1
