@@ -59,14 +59,14 @@ class BaseModule(game.EntityGroup):
         if hasattr(self, 'active'):
             self.active.move(x, y)
 
-    def switch_submodule(self, module):
-        # print("Changing to sub-module", module)
+    def switch_submodule(self, module, play_sound=False):
         if module < len(self.submodules):
             if hasattr(self, 'active') and self.active:
                 self.active.handle_action("pause")
                 self.remove(self.active)
             self.active = self.submodules[module]
             self.active.parent = self
+            self._submodule_should_play_sound = play_sound   # set before resume
             self.active.handle_action("resume")
             self.submenu.select(self.submenu.menu[module])
             self.add(self.active)
@@ -74,15 +74,10 @@ class BaseModule(game.EntityGroup):
         else:
             print("No submodule at %d" % module)
 
-    # def render(self):
-    #     super(BaseModule, self).render()
-
     def handle_action(self, action, value=0):
-
         if action.startswith("knob_"):
-            # if action.startswith("knob_") and not settings.hide_submenu:
             num = int(action[-1])
-            self.switch_submodule(num - 1)
+            self.switch_submodule(num - 1, play_sound=True)   # user-initiated
         elif action in self.action_handlers:
             self.action_handlers[action]()
         else:
@@ -103,14 +98,19 @@ class BaseModule(game.EntityGroup):
     def handle_resume(self):
         self.paused = False
         self.currentSubmodule = 0
-        self.switch_submodule(0)
-        if settings.SOUND_ENABLED:
-            if settings.suppress_module_change_sfx:
-                settings.suppress_module_change_sfx = False
-            elif getattr(self, '_initialized', False):
-                self.module_change_sfx.play()
-        self._initialized = True
+        self.switch_submodule(0)   # play_sound=False by default → silent cascade
+        self._play_module_change_sfx()
 
+    def _play_module_change_sfx(self):
+        if not settings.SOUND_ENABLED:
+            return
+        if not getattr(settings, 'engine_ready', False):
+            return
+        if getattr(settings, 'suppress_module_change_sfx', False):
+            settings.suppress_module_change_sfx = False
+            return
+        self.module_change_sfx.stop()
+        self.module_change_sfx.play()
 
 class SubModule(game.EntityGroup):
 
@@ -145,9 +145,7 @@ class SubModule(game.EntityGroup):
     def handle_resume(self):
         if self.paused == True:
             self.paused = False
-            if settings.SOUND_ENABLED and getattr(self, '_initialized', False):
-                if settings.suppress_module_change_sfx:
-                    settings.suppress_module_change_sfx = False
-                else:
-                    self.submodule_change_sfx.play()
-            self._initialized = True
+            should_play = getattr(self.parent, '_submodule_should_play_sound', False)
+            if should_play and settings.SOUND_ENABLED and settings.engine_ready:
+                self.submodule_change_sfx.stop()
+                self.submodule_change_sfx.play()

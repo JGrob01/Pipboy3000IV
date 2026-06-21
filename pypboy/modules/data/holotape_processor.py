@@ -125,6 +125,7 @@ class Module(pypboy.SubModule):
 
     def handle_pause(self):
         # print("Holotape paused")
+        super(Module, self).handle_pause()
         if hasattr(self, 'active_holotape') and self.active_holotape:
             self.active_holotape.clear_display()
 
@@ -797,7 +798,3 @@ class Health(game.Entity):
 
         # User name
         settings.FreeRobotoB[24].render_to(self.image, (301, 448), settings.name, settings.bright)
-
-    # def handle_resume(self):
-    #     pass
-    #     super(Module, self).handle_resume()

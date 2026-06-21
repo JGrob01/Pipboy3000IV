@@ -26,6 +26,7 @@ if settings.GPIO_AVAILABLE:
 
 try:
     pygame.mixer.pre_init(44100, -16, 2, 512)
+    #pygame.mixer.set_num_channels(16)
     settings.SOUND_ENABLED = True
 except Exception as e:
     settings.SOUND_ENABLED = False

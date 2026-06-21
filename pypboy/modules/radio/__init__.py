@@ -15,4 +15,5 @@ class Module(BaseModule):
         settings.hide_submenu = True
         settings.hide_main_menu = False
         settings.hide_footer = False
+        super(Module, self).handle_resume()
 

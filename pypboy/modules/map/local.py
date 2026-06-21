@@ -64,8 +64,10 @@ class Module(pypboy.SubModule):
     def handle_action(self, action, value=0):
         if action == "zoom_in":
             self.zoomMap(1)
-        if action == "zoom_out":
+        elif action == "zoom_out":
             self.zoomMap(-1)
+        else:
+            super(Module, self).handle_action(action, value)
 
     # def handle_resume(self):
     #     super(Module, self).handle_resume()

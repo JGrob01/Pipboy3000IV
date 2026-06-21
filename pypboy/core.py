@@ -72,11 +72,10 @@ class Pypboy(game.core.Engine):
             "passcode": lambda: passcode.Module(self),
         }
         self.modules = {}
-        # Eagerly construct only what's needed for first boot
         for name in self.EAGER_MODULES:
             self.modules[name] = self._module_factories[name]()
-        settings.engine_ready = True
         self.switch_module(settings.STARTER_MODULE)
+        settings.engine_ready = True   # AFTER the starter module activates
 
     def init_gpio_controls(self):
         for pin in settings.gpio_actions.keys():

@@ -15,8 +15,8 @@ class Engine(object):
     def __init__(self, title, width, height, *args, **kwargs):
         super(Engine, self).__init__(*args, **kwargs)
 
-        # pygame.mixer.init(44100, -16, 2, 512)  # frequency, size, channels, buffersize
         pygame.mixer.init()
+        pygame.mixer.set_num_channels(16)
         pygame.init()
         
         if settings.FULLSCREEN == True or settings.PI == True:
