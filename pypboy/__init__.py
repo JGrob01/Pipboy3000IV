@@ -132,6 +132,9 @@ class SubModule(game.EntityGroup):
         if action.startswith("dial_"):
             if hasattr(self, "menu"):
                 self.menu.handle_action(action)
+        elif action == "select_item":
+            if hasattr(self, "menu"):
+                self.menu.toggle_selection()
         elif action in self.action_handlers:
             self.action_handlers[action]()
 

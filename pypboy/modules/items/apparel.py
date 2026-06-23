@@ -7,11 +7,13 @@ import settings
 class Module(pypboy.SubModule):
 
     label = "APPAREL"
+    SELECTION_MODE = "multi"
 
     def __init__(self, *args, **kwargs):
-        super(Module, self).__init__(*args, **kwargs)
-
+        super(Module, self).__init__(*args, **kwargs)        
         self.menu = pypboy.ui.Menu(settings.ARMOR)
+        self.menu.selection_key = "items.apparel"
+        self.menu.selection_mode = self.SELECTION_MODE
         self.menu.rect[0] = settings.menu_x
         self.menu.rect[1] = settings.menu_y
         self.menu.image_offset_y = 0

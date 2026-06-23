@@ -4,6 +4,7 @@ import pygame
 import optparse
 import sys
 import settings
+import selection_store
 
 from pypboy.rfid import HolotapeReader
 
@@ -39,6 +40,8 @@ if __name__ == "__main__":
         reader.start()
         settings.holotape_reader = reader
     
+    selection_store.load()
+
     boy = Pypboy('Pip-Boy 3000 MK IV', settings.WIDTH, settings.HEIGHT)
     print("RUN")
     boy.run()

@@ -103,6 +103,7 @@ ACTIONS = {
     pygame.K_MINUS: "zoom_out",
     pygame.K_KP_PLUS: "zoom_in",
     pygame.K_KP_MINUS: "zoom_out",
+    pygame.K_RETURN: "select_item",
 }
 
 GPIO_AVAILABLE = False

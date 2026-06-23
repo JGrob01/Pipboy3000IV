@@ -8,6 +8,7 @@ import importlib
 import io
 from datetime import datetime
 from collections import deque
+import selection_store
 
 def word_wrap(surf, text, font):
     text = str(text)
@@ -571,6 +572,9 @@ class Menu(game.Entity):
 
         self.saved_selection = 0
 
+        self._selection_key = None     # backing field; use the property to assign
+        self.selection_mode = "single"
+
         try:
             self.callbacks = callbacks
             # print("self.callbacks = ", self.callbacks)
@@ -586,6 +590,18 @@ class Menu(game.Entity):
         if settings.SOUND_ENABLED:
             self.dial_move_sfx = pygame.mixer.Sound('sounds/pipboy/RotaryVertical/UI_PipBoy_RotaryVertical_01.ogg')
             self.dial_move_sfx.set_volume(settings.VOLUME)
+
+    @property
+    def selection_key(self):
+        return self._selection_key
+
+    @selection_key.setter
+    def selection_key(self, value):
+        self._selection_key = value
+        if not settings.hide_main_menu:
+            self.redraw()
+        else:
+            self._dirty = True
 
     def select(self, item):
         self.selected = item
@@ -765,7 +781,23 @@ class Menu(game.Entity):
             if self.prev_selection:
                 self.selected = self.prev_selection
 
-            self.image.blit(text, (settings.menu_x, offset))
+            # Selection-box indicator
+            box_size = 12
+            text_x = settings.menu_x
+            absolute_index = self.top_of_menu + i
+
+            if self.selection_key is not None:
+                # Always reserve room for the box so all rows align
+                text_x = settings.menu_x + box_size + 6
+
+                if selection_store.is_selected(self.selection_key, absolute_index):
+                    box_x = settings.menu_x
+                    box_y = offset + (text.get_size()[1] - box_size) // 2
+                    # Highlight bar is bright green when row is selected, so flip the box color.
+                    box_color = (0, 0, 0) if i == self.selected else settings.bright
+                    pygame.draw.rect(self.image, box_color, (box_x, box_y, box_size, box_size))
+
+            self.image.blit(text, (text_x, offset))
 
             if number:
                 self.image.blit(number, (settings.menu_x + 330 - number.get_size()[0], offset))
@@ -826,3 +858,9 @@ class Menu(game.Entity):
                     self.image.blit(self.imagebox, (self.image_offset_x, self.image_offset_y))
 
                     self.index += 1
+
+    def toggle_selection(self):
+        if self.selection_key is None:
+            return
+        selection_store.toggle(self.selection_key, self.selected, self.selection_mode)
+        self.redraw()
